@@ -1,0 +1,38 @@
+# Web Framework
+fastapi>=0.104.1,<1.0
+uvicorn[standard]>=0.24.0,<1.0
+pydantic[email]>=2.7.4,<3.0.0
+python-multipart>=0.0.6,<0.1.0
+
+# API & External Services
+twilio>=8.10.0,<9.0.0
+requests>=2.32.3,<3.0.0
+
+# Database & ORM
+SQLAlchemy>=2.0.0,<3.0.0
+psycopg2-binary>=2.9.0,<3.0.0
+
+# Password hashing
+passlib[bcrypt]>=1.7.4,<2.0.0
+
+# Optional: timezone support
+pytz>=2024.1,<2025.0
+
+# LangChain & AI
+langchain>=0.2.10
+langchain-community>=0.2.10
+langchain-ollama>=0.1.2             # ADDED: For OllamaLLM
+langchain-huggingface>=0.0.3        # ADDED: For HuggingFaceEmbeddings
+langchain-chroma>=0.1.2             # ADDED: For Chroma vector store integration
+chromadb>=0.5.5
+sentence-transformers>=2.7.0        # ADDED: A core dependency for HuggingFaceEmbeddings
+
+# Utilities
+python-dotenv>=1.0.1
+pypdf>=4.2.0
+
+# Frontend
+streamlit>=1.36
+
+#For pdf-password
+cryptography>=3.1
