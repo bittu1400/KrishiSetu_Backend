@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, EmailStr
 import random
 import smtplib
@@ -17,14 +17,14 @@ from DataBase import curd
 import os
 
 from dotenv import load_dotenv
-from RAG.src.rag_chain import create_rag_chain
+from RAG.chatbot import get_chatbot_response
 from typing import Optional
 
 load_dotenv()  # Load .env automatically
-API_KEY = os.getenv("GEMINI_API_KEY")
+API_KEY = os.getenv("GROQ_API_KEY")
 
 if not API_KEY:
-    raise RuntimeError("GEMINI_API_KEY not set in environment!")
+    raise RuntimeError("GROQ_API_KEY not set in environment!")
 
 
 app = FastAPI(title="KrishiSetu RAG Backend", version="1.0")
@@ -239,7 +239,6 @@ def register_user(data: dict):
 
 # Initialize RAG chain
 API_KEY = os.environ.get("OPENAI_API_KEY", "YOUR_KEY_HERE")
-rag_chain = create_rag_chain(API_KEY)
 
 # Request and Response models
 class ChatRequest(BaseModel):
@@ -250,28 +249,11 @@ class ChatResponse(BaseModel):
     response: str
     source: Optional[str] = None
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    try:
-        # Here you can handle different languages if needed
-        query_text = request.message
-        lang = request.language.lower()
+@app.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_message = data.get("message", "")
+    language = data.get("language", "English")
 
-        # If you want, you can do language-specific preprocessing
-        if lang in ["नेपाली", "nepali"]:
-            query_text = f"Translate and respond in Nepali: {query_text}"
-        elif lang in ["हिन्दी", "hindi"]:
-            query_text = f"Translate and respond in Hindi: {query_text}"
-        # English default doesn't need changes
-
-        # Query RAG chain
-        result = rag_chain.query(query_text)
-
-        # If result is a dict with 'answer' and 'source', else fallback
-        answer = result.get("answer") if isinstance(result, dict) else str(result)
-        source = result.get("source") if isinstance(result, dict) else None
-
-        return ChatResponse(response=answer, source=source)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+    result = get_chatbot_response(user_message, language)
+    return result
