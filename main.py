@@ -26,7 +26,7 @@ except ImportError:
 
 # Database and RAG imports
 from DataBase.database import SessionLocal, engine, Base
-from DataBase.models import User
+from DataBase.models import User, Expert
 from DataBase import curd  # Note: Ensure 'crud' is correctly spelled (was 'curd' in original)
 from RAG.chatbot import get_chatbot_response
 
@@ -503,3 +503,137 @@ async def root():
             "chat": "/chat (POST)"
         }
     }
+
+class ExpertRegisterRequest(BaseModel):
+    name: str
+    title: str
+    experience: str
+    email: EmailStr
+    phone: str
+    specialization: str
+    price: str
+    features: str
+    password: str
+    bio: Optional[str] = ""
+    category: Optional[str] = "All"
+
+class ExpertLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class ExpertUpdateStatusRequest(BaseModel):
+    expert_id: int
+    status: str  # "Available", "Busy", "Offline"
+
+# Add to main.py - API Endpoints
+@app.post("/expert/register")
+def register_expert(data: ExpertRegisterRequest, db: Session = Depends(get_db)):
+    """Register a new expert."""
+    # Check if expert already exists
+    existing_expert = db.query(Expert).filter(Expert.email == data.email).first()
+    if existing_expert:
+        raise HTTPException(status_code=400, detail="Expert already registered with this email")
+    
+    try:
+        new_expert = curd.create_expert(
+            db=db,
+            name=data.name,
+            title=data.title,
+            experience=data.experience,
+            email=data.email,
+            phone=data.phone,
+            specialization=data.specialization,
+            price=data.price,
+            features=data.features,
+            password=data.password,
+            bio=data.bio,
+            category=data.category
+        )
+        
+        print(f"✅ New expert registered: {data.name}")
+        
+        return {
+            "message": "Expert registered successfully",
+            "expert": {
+                "id": new_expert.id,
+                "name": new_expert.name,
+                "email": new_expert.email,
+                "title": new_expert.title
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@app.post("/expert/login")
+def login_expert(request: ExpertLoginRequest, db: Session = Depends(get_db)):
+    """Login expert with email and password."""
+    expert = curd.verify_expert(db, request.email, request.password)
+    
+    if not expert:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    return {
+        "message": "Login successful",
+        "expert": {
+            "id": expert.id,
+            "name": expert.name,
+            "email": expert.email,
+            "phone": expert.phone,
+            "title": expert.title,
+            "experience": expert.experience,
+            "specialization": expert.specialization,
+            "price": expert.price,
+            "features": expert.features,
+            "rating": expert.rating,
+            "reviews": expert.reviews,
+            "status": expert.status,
+            "bio": expert.bio,
+            "category": expert.category
+        }
+    }
+
+@app.get("/experts")
+def get_experts(category: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get all experts, optionally filtered by category."""
+    try:
+        experts = curd.get_all_experts(db, category)
+        
+        return {
+            "experts": [
+                {
+                    "id": expert.id,
+                    "name": expert.name,
+                    "title": expert.title,
+                    "experience": expert.experience,
+                    "email": expert.email,
+                    "phone": expert.phone,
+                    "specialization": expert.specialization,
+                    "price": expert.price,
+                    "features": expert.features,
+                    "rating": expert.rating,
+                    "reviews": expert.reviews,
+                    "status": expert.status,
+                    "bio": expert.bio,
+                    "category": expert.category
+                }
+                for expert in experts
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching experts: {str(e)}")
+
+@app.post("/expert/update-status")
+def update_expert_status_endpoint(request: ExpertUpdateStatusRequest, db: Session = Depends(get_db)):
+    """Update expert availability status."""
+    try:
+        expert = curd.update_expert_status(db, request.expert_id, request.status)
+        if not expert:
+            raise HTTPException(status_code=404, detail="Expert not found")
+        
+        return {
+            "message": "Status updated successfully",
+            "status": expert.status
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating status: {str(e)}")

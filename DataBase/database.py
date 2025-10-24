@@ -13,3 +13,14 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+print("✅ Farmers table created successfully!")
+
+from DataBase.database import engine, Base
+from DataBase.models import Expert  # Import your new model
+
+# Create the experts table
+Base.metadata.create_all(bind=engine)
+
+print("✅ Expert table created successfully!")
+
