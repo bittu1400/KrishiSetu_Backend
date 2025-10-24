@@ -7,4 +7,5 @@ Detector/test
 Detector/train
 Detector/valid
 Detector/__MACOSX
-.vscode
+.vscodeTrained_model.keras
+trained_model.h5
