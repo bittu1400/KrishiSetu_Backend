@@ -16,10 +16,11 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
-from PyPDF2 import PdfReader
+
+# CORRECTED: PyPDF2 is not in requirements, use pypdf instead
+from pypdf import PdfReader
 from pdfminer.high_level import extract_text as pdfminer_extract_text
 from groq import Groq
-
 
 # =========================
 # Configuration
@@ -150,7 +151,7 @@ def load_pdfs_from_directory(directory: Path) -> List[Document]:
         print(f"📄 Loading {file_path.name}...")
         success = False
         
-        # Try PyPDF2 first
+        # Try PyPDF first
         try:
             reader = PdfReader(str(file_path))
             for page_num, page in enumerate(reader.pages):
@@ -162,7 +163,7 @@ def load_pdfs_from_directory(directory: Path) -> List[Document]:
                     ))
                     success = True
         except Exception as e:
-            print(f"⚠️ PyPDF2 error on {file_path.name}: {e}")
+            print(f"⚠️ PyPDF error on {file_path.name}: {e}")
         
         # Fallback to pdfminer if needed
         if not success:

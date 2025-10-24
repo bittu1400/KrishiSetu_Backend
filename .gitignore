@@ -3,3 +3,8 @@ __pycache__
 DataBase/__pycache__
 krishisetu.db
 .env
+Detector/test
+Detector/train
+Detector/valid
+Detector/__MACOSX
+.vscode

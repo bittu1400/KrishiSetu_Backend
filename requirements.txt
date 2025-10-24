@@ -1,38 +1,52 @@
-# Web Framework
-fastapi>=0.104.1,<1.0
-uvicorn[standard]>=0.24.0,<1.0
-pydantic[email]>=2.7.4,<3.0.0
-python-multipart>=0.0.6,<0.1.0
+# --- Core API Stack ---
+fastapi>=0.115.0,<1.0
+uvicorn[standard]>=0.30.6,<1.0
+pydantic[email]>=2.9.0,<3.0
+python-multipart>=0.0.9,<0.2.0
+requests>=2.32.3,<3.0
+python-dotenv>=1.0.1,<2.0
+pytz>=2024.1,<2026.0
 
-# API & External Services
-twilio>=8.10.0,<9.0.0
-requests>=2.32.3,<3.0.0
+# --- Database / Auth ---
+SQLAlchemy>=2.0.36,<3.0
+psycopg2-binary>=2.9.10,<3.0
+passlib[bcrypt]>=1.7.4,<2.0
+cryptography>=43.0.0,<44.0
 
-# Database & ORM
-SQLAlchemy>=2.0.0,<3.0.0
-psycopg2-binary>=2.9.0,<3.0.0
+# --- ML / AI Core ---
+# TensorFlow 2.16.2 requires protobuf<5.0 and specific numpy version
+tensorflow==2.16.2
+tf-keras==2.16.0
+numpy==1.26.4
+protobuf>=4.24.4,<5.0.0
+ml-dtypes==0.3.2
+scikit-learn>=1.5.2,<2.0
+pandas>=2.2.2,<3.0
+matplotlib>=3.9.2,<4.0
+seaborn>=0.13.2,<1.0
 
-# Password hashing
-passlib[bcrypt]>=1.7.4,<2.0.0
+# --- NLP / Vector / LangChain ---
+langchain>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-ollama>=0.2.0,<0.3.0
+langchain-huggingface>=0.1.0,<0.2.0
+langchain-chroma>=0.2.0,<0.3.0
+chromadb>=0.5.15,<0.6.0
+sentence-transformers>=3.1.1,<4.0
+faiss-cpu>=1.8.0,<2.0
 
-# Optional: timezone support
-pytz>=2024.1,<2025.0
+# --- PDF / File Handling ---
+# Using pypdf (modern) instead of PyPDF2 (deprecated)
+pypdf>=4.3.1,<5.0
+pdfminer.six>=20221105,<20240000
+Pillow>=10.3.0,<11.0
+opencv-python>=4.10.0.84,<5.0
 
-# LangChain & AI
-langchain>=0.2.10
-langchain-community>=0.2.10
-langchain-ollama>=0.1.2             # ADDED: For OllamaLLM
-langchain-huggingface>=0.0.3        # ADDED: For HuggingFaceEmbeddings
-langchain-chroma>=0.1.2             # ADDED: For Chroma vector store integration
-chromadb>=0.5.5
-sentence-transformers>=2.7.0        # ADDED: A core dependency for HuggingFaceEmbeddings
+# --- Audio / Visualization ---
+librosa>=0.10.2,<0.11.0
 
-# Utilities
-python-dotenv>=1.0.1
-pypdf>=4.2.0
+# --- Cloud / Utilities ---
+twilio>=9.1.0,<10.0
+groq>=0.9.0,<1.0
 
-# Frontend
-streamlit>=1.36
-
-#For pdf-password
-cryptography>=3.1
+argon2-cffi
