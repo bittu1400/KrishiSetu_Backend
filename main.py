@@ -219,27 +219,40 @@ def predict_disease(preprocessed_image):
     except Exception as e:
         raise ValueError(f"Error during prediction: {e}")
 
-# Endpoints
 @app.post("/send-otp")
 def send_otp(request: OTPRequest):
-    """Send OTP to phone (SMS, commented out) or email."""
+    """Send OTP to phone (SMS) or email."""
     otp = generate_otp()
     
     if request.phone:
-        # send_sms(request.phone, otp)  # Uncomment when using SMS
-        print(f"📱 DEBUG: OTP {otp} for phone {request.phone}")
-        otp_store[request.phone] = otp
-        return {"message": "OTP sent via SMS (debug mode)", "otp": otp}  # Remove 'otp' in production
+        # Validate and format phone number
+        phone = request.phone.strip()
+        if not phone.startswith('+'):
+            # Assuming Nepal (+977), adjust for your country
+            phone = f"+977{phone}" if len(phone) == 10 else phone
+        
+        try:
+            send_sms(phone, otp)  # This will raise exception if it fails
+            otp_store[phone] = otp
+            print(f"✅ SMS sent successfully to {phone}")
+            return {"message": "OTP sent via SMS", "otp": otp}  # Remove 'otp' in production
+        except Exception as e:
+            print(f"❌ SMS sending failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to send SMS: {str(e)}")
     
     elif request.email:
-        send_email(request.email, otp)
-        otp_store[request.email] = otp
-        print(f"📧 Email sent to {request.email}")
-        return {"message": "OTP sent via Email"}
+        try:
+            send_email(request.email, otp)
+            otp_store[request.email] = otp
+            print(f"✅ Email sent to {request.email}")
+            return {"message": "OTP sent via Email"}
+        except Exception as e:
+            print(f"❌ Email sending failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
     
     else:
         raise HTTPException(status_code=400, detail="Phone or Email required")
-
+        
 @app.post("/verify-otp")
 def verify_otp(request: VerifyRequest):
     """Verify the OTP."""
