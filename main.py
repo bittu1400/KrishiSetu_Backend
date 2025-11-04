@@ -15,6 +15,12 @@ import io
 import os
 from PIL import Image
 
+# Database and RAG imports - SPECIFIC ORDER MATTERS
+from DataBase.database import SessionLocal, engine, Base
+from DataBase import curd  # Import curd module, not specific functions
+from DataBase.models import User, Expert, Booking  # Import models last
+from RAG.chatbot import get_chatbot_response
+
 # TensorFlow and Keras imports
 try:
     from tf_keras.models import load_model
@@ -650,3 +656,194 @@ def update_expert_status_endpoint(request: ExpertUpdateStatusRequest, db: Sessio
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating status: {str(e)}")
+
+# KEEP THESE in main.py - these are Pydantic models for API validation
+class BookingCreate(BaseModel):
+    user_email: str
+    expert_id: int
+    expert_name: str
+    expert_title: str
+    specialization: str
+    price: str
+    booking_date: str
+    status: str = "pending"
+
+class BookingStatusUpdate(BaseModel):
+    status: str
+
+# Add these endpoints to main.py
+@app.post("/bookings", response_model=dict)
+def create_booking_endpoint(booking: BookingCreate, db: Session = Depends(get_db)):
+    """Create a new booking."""
+    try:
+        # Parse datetime
+        booking_datetime = datetime.fromisoformat(booking.booking_date.replace('Z', '+00:00'))
+        
+        # Create booking
+        new_booking = curd.create_booking(
+            db=db,
+            user_email=booking.user_email,
+            expert_id=booking.expert_id,
+            expert_name=booking.expert_name,
+            expert_title=booking.expert_title,
+            specialization=booking.specialization,
+            price=booking.price,
+            booking_date=booking_datetime,
+            status=booking.status
+        )
+        
+        if not new_booking:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        print(f"✅ Booking created: {new_booking.booking_id}")
+        
+        return {
+            "message": "Booking created successfully",
+            "booking_id": new_booking.booking_id,
+            "booking": {
+                "booking_id": new_booking.booking_id,
+                "user_id": new_booking.user_id,
+                "expert_id": new_booking.expert_id,
+                "expert_name": new_booking.expert_name,
+                "expert_title": new_booking.expert_title,
+                "specialization": new_booking.specialization,
+                "price": new_booking.price,
+                "booking_date": new_booking.booking_date.isoformat(),
+                "status": new_booking.status,
+                "created_at": new_booking.created_at.isoformat()
+            }
+        }
+    
+    except Exception as e:
+        print(f"❌ Error creating booking: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create booking: {str(e)}")
+
+@app.get("/bookings")
+def get_bookings_endpoint(
+    user_email: str,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Get all bookings for a user."""
+    try:
+        bookings = curd.get_user_bookings(db, user_email, status)
+        
+        return {
+            "bookings": [
+                {
+                    "booking_id": booking.booking_id,
+                    "user_id": booking.user_id,
+                    "expert_id": booking.expert_id,
+                    "expert_name": booking.expert_name,
+                    "expert_title": booking.expert_title,
+                    "specialization": booking.specialization,
+                    "price": booking.price,
+                    "booking_date": booking.booking_date.isoformat(),
+                    "status": booking.status,
+                    "created_at": booking.created_at.isoformat()
+                }
+                for booking in bookings
+            ]
+        }
+    
+    except Exception as e:
+        print(f"❌ Error fetching bookings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch bookings: {str(e)}")
+
+@app.get("/bookings/{booking_id}")
+def get_booking_endpoint(booking_id: str, db: Session = Depends(get_db)):
+    """Get a single booking by ID."""
+    try:
+        booking = curd.get_booking_by_id(db, booking_id)
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        return {
+            "booking_id": booking.booking_id,
+            "user_id": booking.user_id,
+            "expert_id": booking.expert_id,
+            "expert_name": booking.expert_name,
+            "expert_title": booking.expert_title,
+            "specialization": booking.specialization,
+            "price": booking.price,
+            "booking_date": booking.booking_date.isoformat(),
+            "status": booking.status,
+            "created_at": booking.created_at.isoformat()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching booking: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch booking: {str(e)}")
+
+@app.patch("/bookings/{booking_id}")
+def update_booking_endpoint(
+    booking_id: str,
+    update: BookingStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update booking status."""
+    try:
+        booking = curd.update_booking_status(db, booking_id, update.status)
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        print(f"✅ Booking {booking_id} status updated to {update.status}")
+        
+        return {
+            "message": "Booking updated successfully",
+            "booking_id": booking.booking_id,
+            "status": booking.status
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error updating booking: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update booking: {str(e)}")
+
+@app.delete("/bookings/{booking_id}")
+def delete_booking_endpoint(booking_id: str, db: Session = Depends(get_db)):
+    """Cancel/delete a booking."""
+    try:
+        success = curd.delete_booking(db, booking_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        print(f"✅ Booking {booking_id} cancelled")
+        
+        return {
+            "message": "Booking cancelled successfully",
+            "booking_id": booking_id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error cancelling booking: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to cancel booking: {str(e)}")
+
+@app.get("/bookings/count/{user_email}")
+def get_bookings_count(user_email: str, db: Session = Depends(get_db)):
+    """Get count of bookings for a user."""
+    try:
+        bookings = curd.get_user_bookings(db, user_email)
+        
+        return {
+            "total": len(bookings),
+            "pending": len([b for b in bookings if b.status == "pending"]),
+            "confirmed": len([b for b in bookings if b.status == "confirmed"]),
+            "completed": len([b for b in bookings if b.status == "completed"]),
+            "cancelled": len([b for b in bookings if b.status == "cancelled"])
+        }
+    
+    except Exception as e:
+        print(f"❌ Error fetching booking count: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch booking count: {str(e)}")
