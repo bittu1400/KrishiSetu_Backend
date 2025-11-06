@@ -30,12 +30,6 @@ except ImportError:
     MODEL_AVAILABLE = False
     print("Warning: TensorFlow not installed. Using mock detection.")
 
-# Database and RAG imports
-from DataBase.database import SessionLocal, engine, Base
-from DataBase.models import User, Expert
-from DataBase import curd  # Note: Ensure 'crud' is correctly spelled (was 'curd' in original)
-from RAG.chatbot import get_chatbot_response
-
 # Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -72,20 +66,21 @@ otp_store = {}
 
 # Pydantic models
 class OTPRequest(BaseModel):
-    phone: str | None = None
-    email: EmailStr | None = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
 
 class VerifyRequest(BaseModel):
     identifier: str
     otp: str
 
+# Pydantic model for registration
 class RegisterRequest(BaseModel):
     name: str
     city: str
     email: EmailStr
     phone: str
-    pin: str
-
+    password: str  # Changed from 'pin' to 'password'
+    
 # Update the LoginRequest model to accept phone or email
 class LoginRequest(BaseModel):
     identifier: str  # Can be email or phone
@@ -108,17 +103,17 @@ def generate_otp():
     return str(random.randint(100000, 999999))
 
 def send_email(to_email: str, otp: str):
-    """Send OTP via email."""
-    sender = "your@gmail.com"  # Replace with your email
-    password = "pfgxxybyewaglrne"  # Replace with your app-specific password
+    """Send OTP via email."""    
+    SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+    SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
     subject = "Your OTP Code"
     message = f"Subject: {subject}\n\nYour OTP is {otp}"
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(sender, password)
-            server.sendmail(sender, to_email, message)
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+            server.sendmail(SENDER_EMAIL, to_email, message)
         print(f"✅ Email sent to {to_email} with OTP: {otp}")
     except Exception as e:
         print(f"❌ Email failed: {e}")
@@ -133,7 +128,7 @@ def send_sms(to_phone: str, otp: str):
     try:
         message = client.messages.create(
             body=f"Your OTP is {otp}",
-            from_="+12792394257",
+            from_="+12175877624",
             to=to_phone
         )
         print(f"✅ SMS sent to {to_phone} with OTP: {otp}")
@@ -277,13 +272,16 @@ def verify_otp(request: VerifyRequest):
     print(f"✅ OTP verified successfully for {request.identifier}")
     return {"message": "OTP verified successfully"}
 
+# Register endpoint
 @app.post("/register")
 def register_user(data: RegisterRequest, db: Session = Depends(get_db)):
     """Register a new user in the database."""
+    # Check if email already exists
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Check if phone already exists
     existing_phone = db.query(User).filter(User.phone == data.phone).first()
     if existing_phone:
         raise HTTPException(status_code=400, detail="Phone number already registered")
@@ -295,7 +293,7 @@ def register_user(data: RegisterRequest, db: Session = Depends(get_db)):
             city=data.city,
             email=data.email,
             phone=data.phone,
-            password=data.pin
+            password=data.password  # Changed from 'pin' to 'password'
         )
         print(f"✅ New user registered: {data.name} ({data.city})")
         return {
@@ -309,12 +307,18 @@ def register_user(data: RegisterRequest, db: Session = Depends(get_db)):
         }
     except Exception as e:
         db.rollback()
+        print(f"❌ Registration failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
-# Update the login endpoint
+# Add/Update these Pydantic models
+class UserLoginRequest(BaseModel):
+    identifier: str  # Can be email or phone
+    password: str
+
+# Update USER LOGIN endpoint
 @app.post("/login")
-def login_user(request: LoginRequest, db: Session = Depends(get_db)):
-    """Login user with email/phone and password/PIN."""
+def login_user(request: UserLoginRequest, db: Session = Depends(get_db)):
+    """Login user with email/phone and password."""
     identifier = request.identifier.strip()
     
     print(f"🔍 Login attempt - Identifier: {identifier}")
@@ -330,9 +334,9 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
     
     if not user:
         print(f"❌ User not found: {identifier}")
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Verify password/PIN using the verify_password function from curd.py
+    # Verify password
     if not curd.verify_password(request.password, user.password):
         print(f"❌ Invalid password for user: {identifier}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -527,7 +531,7 @@ class ExpertRegisterRequest(BaseModel):
     name: str
     title: str
     experience: str
-    email: EmailStr
+    email: str
     phone: str
     specialization: str
     price: str
@@ -537,7 +541,7 @@ class ExpertRegisterRequest(BaseModel):
     category: Optional[str] = "All"
 
 class ExpertLoginRequest(BaseModel):
-    email: EmailStr
+    identifier: str
     password: str
 
 class ExpertUpdateStatusRequest(BaseModel):
@@ -587,7 +591,7 @@ def register_expert(data: ExpertRegisterRequest, db: Session = Depends(get_db)):
 @app.post("/expert/login")
 def login_expert(request: ExpertLoginRequest, db: Session = Depends(get_db)):
     """Login expert with email and password."""
-    expert = curd.verify_expert(db, request.email, request.password)
+    expert = curd.verify_expert(db, request.identifier, request.password)
     
     if not expert:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -847,3 +851,44 @@ def get_bookings_count(user_email: str, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"❌ Error fetching booking count: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch booking count: {str(e)}")
+
+from sqlalchemy import desc
+
+@app.get("/expert/{expert_id}/bookings")
+def get_expert_bookings(
+    expert_id: int,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Get all bookings for a specific expert."""
+    try:
+        expert = db.query(Expert).filter(Expert.id == expert_id).first()
+        if not expert:
+            raise HTTPException(status_code=404, detail="Expert not found")
+        
+        query = db.query(Booking).filter(Booking.expert_id == expert_id)
+        
+        if status and status.lower() != 'all':
+            query = query.filter(Booking.status == status.lower())
+        
+        bookings = query.order_by(desc(Booking.created_at)).all()
+        
+        return {
+            "bookings": [
+                {
+                    "booking_id": booking.booking_id,
+                    "user_id": booking.user_id,
+                    "expert_id": booking.expert_id,
+                    "expert_name": booking.expert_name,
+                    "expert_title": booking.expert_title,
+                    "specialization": booking.specialization,
+                    "price": booking.price,
+                    "booking_date": booking.booking_date.isoformat(),
+                    "status": booking.status,
+                    "created_at": booking.created_at.isoformat()
+                }
+                for booking in bookings
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
