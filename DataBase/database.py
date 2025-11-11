@@ -16,7 +16,6 @@ Base = declarative_base()
 
 print("✅ Farmers table created successfully!")
 
-from DataBase.database import engine, Base
 from DataBase.models import Expert  # Import your new model
 
 # Create the experts table

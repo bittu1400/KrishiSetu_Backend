@@ -17,7 +17,7 @@ from PIL import Image
 
 # Database and RAG imports - SPECIFIC ORDER MATTERS
 from DataBase.database import SessionLocal, engine, Base
-from DataBase import curd  # Import curd module, not specific functions
+from DataBase import curd  
 from DataBase.models import User, Expert, Booking  # Import models last
 from RAG.chatbot import get_chatbot_response
 
@@ -119,7 +119,6 @@ def send_email(to_email: str, otp: str):
         print(f"❌ Email failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
 
-# Note: SMS sending is commented out as per original code
 def send_sms(to_phone: str, otp: str):
     from twilio.rest import Client
     account_sid = TWILIO_ACCOUNT_SID
@@ -128,7 +127,7 @@ def send_sms(to_phone: str, otp: str):
     try:
         message = client.messages.create(
             body=f"Your OTP is {otp}",
-            from_="+12175877624",
+            from_="+19412997133",
             to=to_phone
         )
         print(f"✅ SMS sent to {to_phone} with OTP: {otp}")
@@ -136,6 +135,7 @@ def send_sms(to_phone: str, otp: str):
     except Exception as e:
         print(f"❌ SMS failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send SMS: {e}")
+
 
 # Database setup
 Base.metadata.create_all(bind=engine)
@@ -149,7 +149,8 @@ def get_db():
         db.close()
 
 # Model loading and disease detection
-MODEL_PATH = "Trained_model.keras"
+# MODEL_PATH = "Trained_model.keras"
+MODEL_PATH = "trained_model.h5"
 DISEASE_CLASSES = [
     'Apple___Black_rot', 'Apple___healthy', 'Corn___Common_rust', 'Corn___Northern_Leaf_Blight',
     'Grape___Esca', 'Grape___Leaf_blight', 'Potato___Early_blight', 'Potato___Late_blight',
