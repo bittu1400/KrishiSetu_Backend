@@ -14,13 +14,14 @@ import numpy as np
 import io
 import os
 from PIL import Image
+import logging
 
 # Database and RAG imports - SPECIFIC ORDER MATTERS
-from DataBase.database import SessionLocal, engine, Base
+from DataBase.database import SessionLocal, engine, Base, init_db, check_db_health, close_db
 from DataBase import curd  
 from DataBase.models import User, Expert, Booking  # Import models last
 from RAG.chatbot import get_chatbot_response
-
+import json
 # TensorFlow and Keras imports
 try:
     from tf_keras.models import load_model
@@ -30,27 +31,46 @@ except ImportError:
     MODEL_AVAILABLE = False
     print("Warning: TensorFlow not installed. Using mock detection.")
 
-# Load environment variables
-load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 
-if not GROQ_API_KEY:
-    raise RuntimeError("GROQ_API_KEY not set in environment!")
+if os.getenv("ENVIRONMENT") != "PRODUCTION":
+    load_dotenv()
 
-if not OPENWEATHER_API_KEY:
-    raise RuntimeError("OPENWEATHER_API_KEY not set in environment!")
 
-if not TWILIO_ACCOUNT_SID:
-    raise RuntimeError("TWILIO_ACCOUNT_SID not set in environment!")
+ENV = os.getenv("ENV")
 
-if not TWILIO_AUTH_TOKEN:
-    raise RuntimeError("TWILIO_AUTH_TOKEN not set in environment!")
+logging.basicConfig(
+    level=logging.DEBUG if ENV == "development" else logging.INFO,
+    format="%(levelname)s:%(name)s:%(message)s",
+)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
-# FastAPI app setup
+
+def validate_environment():
+    """Validate all required environment variables are set."""
+    required_vars = {
+        "DATABASE_URL": "Neon PostgreSQL connection string",
+        "GROQ_API_KEY": "Groq API key for chatbot",
+        "OPENWEATHER_API_KEY": "OpenWeather API key",
+        "TWILIO_ACCOUNT_SID": "Twilio account SID",
+        "TWILIO_AUTH_TOKEN": "Twilio auth token",
+        "SENDER_EMAIL": "Gmail sender email",
+        "SENDER_PASSWORD": "Gmail app password"
+    }
+    
+    missing = []
+    for var, description in required_vars.items():
+        if not os.getenv(var):
+            missing.append(f"  - {var}: {description}")
+    
+    if missing:
+        error_msg = "❌ Missing required environment variables:\n" + "\n".join(missing)
+        raise RuntimeError(error_msg)
+    
+    print("✅ All environment variables validated")
+
 app = FastAPI(title="KrishiSetu RAG Backend", version="1.0")
+
+validate_environment()
 
 # CORS middleware
 app.add_middleware(
@@ -151,13 +171,8 @@ def get_db():
 # Model loading and disease detection
 # MODEL_PATH = "Trained_model.keras"
 MODEL_PATH = "trained_model.h5"
-DISEASE_CLASSES = [
-    'Apple___Black_rot', 'Apple___healthy', 'Corn___Common_rust', 'Corn___Northern_Leaf_Blight',
-    'Grape___Esca', 'Grape___Leaf_blight', 'Potato___Early_blight', 'Potato___Late_blight',
-    'Potato___healthy', 'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight',
-    'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites',
-    'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___healthy'
-]
+with open('class_names.json', 'r') as f:
+    DISEASE_CLASSES = json.load(f)
 
 DISEASE_RECOMMENDATIONS = {
     "Early blight": {
@@ -222,55 +237,76 @@ def predict_disease(preprocessed_image):
         raise ValueError(f"Error during prediction: {e}")
 
 @app.post("/send-otp")
-def send_otp(request: OTPRequest):
+def send_otp(request: OTPRequest, db: Session = Depends(get_db)):
     """Send OTP to phone (SMS) or email."""
-    otp = generate_otp()
+    from DataBase.models import OTP  # Import your OTP model
+    from datetime import timedelta
     
+    otp_code = generate_otp()
+    identifier = request.phone or request.email
+    
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Phone or Email required")
+    
+    # Store OTP in database instead of memory
+    expires_at = datetime.utcnow() + timedelta(minutes=10)  # 10 min expiry
+    
+    # Delete old OTP if exists
+    db.query(OTP).filter(OTP.identifier == identifier).delete()
+    
+    # Create new OTP
+    new_otp = OTP(
+        identifier=identifier,
+        otp=otp_code,
+        expires_at=expires_at
+    )
+    db.add(new_otp)
+    db.commit()
+    
+    # Send OTP via SMS or Email
     if request.phone:
-        # Validate and format phone number
         phone = request.phone.strip()
         if not phone.startswith('+'):
-            # Assuming Nepal (+977), adjust for your country
             phone = f"+977{phone}" if len(phone) == 10 else phone
         
         try:
-            send_sms(phone, otp)  # This will raise exception if it fails
-            otp_store[phone] = otp
-            print(f"✅ SMS sent successfully to {phone}")
-            return {"message": "OTP sent via SMS", "otp": otp}  # Remove 'otp' in production
+            send_sms(phone, otp_code)
+            return {"message": "OTP sent via SMS"}  # DON'T return actual OTP!
         except Exception as e:
-            print(f"❌ SMS sending failed: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Failed to send SMS: {str(e)}")
     
     elif request.email:
         try:
-            send_email(request.email, otp)
-            otp_store[request.email] = otp
-            print(f"✅ Email sent to {request.email}")
+            send_email(request.email, otp_code)
             return {"message": "OTP sent via Email"}
         except Exception as e:
-            print(f"❌ Email sending failed: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-    
-    else:
-        raise HTTPException(status_code=400, detail="Phone or Email required")
-        
+       
 @app.post("/verify-otp")
-def verify_otp(request: VerifyRequest):
-    """Verify the OTP."""
-    stored_otp = otp_store.get(request.identifier)
+def verify_otp(request: VerifyRequest, db: Session = Depends(get_db)):
+    """Verify the OTP from database."""
+    from DataBase.models import OTP
     
-    print(f"🔍 Verifying OTP for: {request.identifier}")
-    print(f"📝 Stored OTP: {stored_otp}, Provided OTP: {request.otp}")
+    # Find OTP in database
+    stored_otp = db.query(OTP).filter(OTP.identifier == request.identifier).first()
     
     if not stored_otp:
         raise HTTPException(status_code=400, detail="No OTP found or expired")
     
-    if stored_otp != request.otp:
+    # Check if expired
+    if stored_otp.expires_at < datetime.utcnow():
+        db.delete(stored_otp)
+        db.commit()
+        raise HTTPException(status_code=400, detail="OTP expired")
+    
+    # Verify OTP
+    if stored_otp.otp != request.otp:
         raise HTTPException(status_code=400, detail="Invalid OTP")
     
-    del otp_store[request.identifier]
-    print(f"✅ OTP verified successfully for {request.identifier}")
+    # Delete OTP after successful verification
+    db.delete(stored_otp)
+    db.commit()
+    
     return {"message": "OTP verified successfully"}
 
 # Register endpoint
@@ -426,6 +462,9 @@ async def diagnose_crop(file: UploadFile = File(...)):
     print(f"📁 File name: {file.filename}")
     print(f"📝 Content type: {file.content_type}")
     
+    # ADD THIS: File size validation
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    
     try:
         # Validate file type
         if file.content_type not in ["image/jpeg", "image/png", "image/jpg", "application/octet-stream"]:
@@ -435,7 +474,7 @@ async def diagnose_crop(file: UploadFile = File(...)):
                 detail="Invalid file type. Please upload JPG or PNG image."
             )
         
-        # Read file bytes
+        # Read and validate file size
         image_data = await file.read()
         print(f"✅ Read {len(image_data)} bytes")
         
@@ -443,50 +482,22 @@ async def diagnose_crop(file: UploadFile = File(...)):
             print("❌ Empty file!")
             raise HTTPException(status_code=400, detail="Empty file uploaded")
         
-        # Preprocess
-        print("🔄 Preprocessing image...")
+        # ADD THIS: Check file size
+        if len(image_data) > MAX_FILE_SIZE:
+            print(f"❌ File too large: {len(image_data)} bytes")
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large. Maximum size is 10MB, got {len(image_data) / 1024 / 1024:.2f}MB"
+            )
+        
+        # Rest of your code remains the same...
         preprocessed_image = preprocess_image(image_data)
-        
-        # Predict
-        print("🤖 Running prediction...")
         prediction = predict_disease(preprocessed_image)
-        print(f"✅ Prediction: {prediction}")
         
-        disease_name = prediction["disease"]
-        confidence = prediction["confidence"]
+        # ... existing response code ...
         
-        # Get recommendations
-        disease_info = DISEASE_RECOMMENDATIONS.get(
-            disease_name,
-            {
-                "recommendation": "Unable to determine specific recommendations.",
-                "treatment": "Please consult an agricultural expert."
-            }
-        )
-        
-        # Build response
-        response = {
-            "disease_detected": disease_name,
-            "confidence_score": confidence,
-            "is_healthy": disease_name.lower() == "healthy",
-            "severity": "Low" if confidence < 75 else "Medium" if confidence < 85 else "High",
-            "recommendation": disease_info["recommendation"],
-            "treatment": disease_info["treatment"],
-            "diagnosis_date": datetime.now().isoformat(),
-            "additional_info": {
-                "class_index": prediction["class_index"],
-                "total_classes": len(DISEASE_CLASSES),
-                "model_version": "1.0"
-            }
-        }
-        
-        print("✅ Response prepared successfully")
-        print("="*50 + "\n")
-        return JSONResponse(content=response, status_code=200)
-    
     except HTTPException as e:
         print(f"❌ HTTP Exception: {e.detail}")
-        print("="*50 + "\n")
         return JSONResponse(
             content={"error": e.detail, "status": "error"},
             status_code=e.status_code
@@ -495,20 +506,10 @@ async def diagnose_crop(file: UploadFile = File(...)):
         print(f"❌ Unexpected error: {str(e)}")
         import traceback
         traceback.print_exc()
-        print("="*50 + "\n")
         return JSONResponse(
             content={"error": f"Error processing image: {str(e)}", "status": "error"},
             status_code=500
         )
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "model_loaded": MODEL is not None,
-        "available_diseases": DISEASE_CLASSES
-    }
 
 @app.get("/")
 async def root():
@@ -893,3 +894,40 @@ def get_expert_bookings(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/health")
+async def health_check():
+    """Comprehensive health check endpoint for Cloud Run."""
+    db_healthy, db_message = check_db_health()
+    
+    health_status = {
+        "status": "healthy" if db_healthy else "unhealthy",
+        "model_loaded": MODEL is not None,
+        "database": {
+            "status": "connected" if db_healthy else "disconnected",
+            "message": db_message
+        },
+        "available_diseases": len(DISEASE_CLASSES),
+        "environment": "production" if os.getenv("ENVIRONMENT") == "production" else "development",
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    status_code = 200 if db_healthy else 503
+    return JSONResponse(content=health_status, status_code=status_code)
+
+@app.get("/test-db")
+def test_database(db: Session = Depends(get_db)):
+    """Test database connection (use this to verify Neon works)."""
+    try:
+        # Test query
+        result = db.execute("SELECT 'Neon PostgreSQL Connected!' as message, NOW() as time")
+        row = result.fetchone()
+        
+        return {
+            "status": "success",
+            "message": row[0],
+            "server_time": str(row[1]),
+            "database": "Neon PostgreSQL"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database test failed: {str(e)}")

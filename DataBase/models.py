@@ -60,3 +60,28 @@ class Booking(Base):
     # Relationships
     user = relationship("User", back_populates="bookings")
     expert = relationship("Expert", back_populates="bookings")
+
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
+
+Base = declarative_base()
+
+# ... your existing User, Expert, Booking models ...
+
+class OTP(Base):
+
+    __tablename__ = "otps"
+    
+    identifier = Column(String, primary_key=True)  # phone number or email
+    otp = Column(String(6), nullable=False)        # 6-digit OTP code
+    expires_at = Column(DateTime, nullable=False)  # expiration timestamp
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    def __repr__(self):
+        return f"<OTP(identifier='{self.identifier}', expires_at='{self.expires_at}')>"
+    
+    @property
+    def is_expired(self):
+        """Check if OTP has expired."""
+        return datetime.utcnow() > self.expires_at
