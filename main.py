@@ -175,19 +175,158 @@ with open('class_names.json', 'r') as f:
     DISEASE_CLASSES = json.load(f)
 
 DISEASE_RECOMMENDATIONS = {
-    "Early blight": {
-        "recommendation": "Remove affected leaves and apply Mancozeb fungicide.",
-        "treatment": "Spray Dithane M-45 once every 7 days."
+    "Apple___Apple_scab": {
+        "recommendation": "Prune infected leaves and improve air circulation.",
+        "treatment": "Spray Mancozeb or Captan every 7–10 days."
     },
-    "Late blight": {
-        "recommendation": "Avoid overhead irrigation and use Copper-based fungicides.",
-        "treatment": "Spray Ridomil Gold every 5 days."
+    "Apple___Black_rot": {
+        "recommendation": "Remove mummified fruits and prune cankers.",
+        "treatment": "Use a Captan or Thiophanate-methyl spray weekly."
     },
-    "Healthy": {
-        "recommendation": "No disease detected. Maintain regular irrigation and balanced nutrition.",
+    "Apple___Cedar_apple_rust": {
+        "recommendation": "Remove nearby juniper hosts and protect new growth.",
+        "treatment": "Apply Myclobutanil every 10 days."
+    },
+    "Apple___healthy": {
+        "recommendation": "Tree is healthy; maintain sanitation.",
+        "treatment": "None needed."
+    },
+    "Blueberry___healthy": {
+        "recommendation": "Healthy plant; ensure good mulching and watering.",
+        "treatment": "None needed."
+    },
+    "Cherry_(including_sour)___Powdery_mildew": {
+        "recommendation": "Remove affected shoots and avoid overcrowding.",
+        "treatment": "Spray Sulfur or Potassium bicarbonate weekly."
+    },
+    "Cherry_(including_sour)___healthy": {
+        "recommendation": "Healthy tree; keep pruning balanced.",
+        "treatment": "None needed."
+    },
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+        "recommendation": "Rotate crops and remove old debris.",
+        "treatment": "Apply Strobilurin-based fungicide every 7 days."
+    },
+    "Corn_(maize)___Common_rust_": {
+        "recommendation": "Use resistant varieties and monitor humidity.",
+        "treatment": "Spray Mancozeb or Triazole fungicide weekly."
+    },
+    "Corn_(maize)___Northern_Leaf_Blight": {
+        "recommendation": "Increase spacing and remove crop residue.",
+        "treatment": "Use a Triazole + Strobilurin mix every 10 days."
+    },
+    "Corn_(maize)___healthy": {
+        "recommendation": "Crop is healthy; maintain fertilizer schedule.",
+        "treatment": "None needed."
+    },
+    "Grape___Black_rot": {
+        "recommendation": "Remove infected leaves and improve canopy airflow.",
+        "treatment": "Spray Mancozeb or Myclobutanil every 7–14 days."
+    },
+    "Grape___Esca_(Black_Measles)": {
+        "recommendation": "Avoid pruning wounds and remove infected vines.",
+        "treatment": "No cure; apply Trichoderma-based protectants."
+    },
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+        "recommendation": "Improve air flow and remove infected leaves.",
+        "treatment": "Use Copper fungicide every 10 days."
+    },
+    "Grape___healthy": {
+        "recommendation": "Vine is healthy; maintain irrigation and training.",
+        "treatment": "None needed."
+    },
+    "Orange___Haunglongbing_(Citrus_greening)": {
+        "recommendation": "Remove infected trees and control psyllid insects.",
+        "treatment": "No cure; apply Imidacloprid for vector control."
+    },
+    "Peach___Bacterial_spot": {
+        "recommendation": "Avoid overhead watering and prune diseased twigs.",
+        "treatment": "Spray Copper-based fungicide every 7 days."
+    },
+    "Peach___healthy": {
+        "recommendation": "Tree is healthy; maintain mulch and watering.",
         "treatment": "None required."
     },
-    # Add more recommendations as needed
+    "Pepper,_bell___Bacterial_spot": {
+        "recommendation": "Use drip irrigation and remove infected leaves.",
+        "treatment": "Apply Copper + Mancozeb mix weekly."
+    },
+    "Pepper,_bell___healthy": {
+        "recommendation": "Plant is healthy; maintain balanced nutrients.",
+        "treatment": "None needed."
+    },
+    "Potato___Early_blight": {
+        "recommendation": "Remove old foliage and avoid leaf wetness.",
+        "treatment": "Spray Mancozeb or Chlorothalonil every 7 days."
+    },
+    "Potato___Late_blight": {
+        "recommendation": "Ensure good airflow and avoid overhead irrigation.",
+        "treatment": "Use Metalaxyl or Ridomil Gold every 5 days."
+    },
+    "Potato___healthy": {
+        "recommendation": "Healthy crop; maintain regular monitoring.",
+        "treatment": "None required."
+    },
+    "Raspberry___healthy": {
+        "recommendation": "Healthy plant; keep weeds down and water evenly.",
+        "treatment": "None needed."
+    },
+    "Soybean___healthy": {
+        "recommendation": "Healthy crop; ensure nitrogen balance.",
+        "treatment": "None needed."
+    },
+    "Squash___Powdery_mildew": {
+        "recommendation": "Improve airflow and remove infected leaves.",
+        "treatment": "Spray Potassium bicarbonate or Sulfur weekly."
+    },
+    "Strawberry___Leaf_scorch": {
+        "recommendation": "Remove infected leaves and avoid overhead irrigation.",
+        "treatment": "Use Captan fungicide every 7 days."
+    },
+    "Strawberry___healthy": {
+        "recommendation": "Plant is healthy; maintain mulching.",
+        "treatment": "None needed."
+    },
+    "Tomato___Bacterial_spot": {
+        "recommendation": "Avoid leaf wetness and remove infected foliage.",
+        "treatment": "Copper sprays every 5–7 days."
+    },
+    "Tomato___Early_blight": {
+        "recommendation": "Remove bottom leaves and improve airflow.",
+        "treatment": "Spray Mancozeb or Chlorothalonil every 7 days."
+    },
+    "Tomato___Late_blight": {
+        "recommendation": "Prevent leaf wetness and space plants well.",
+        "treatment": "Spray Metalaxyl or Ridomil Gold every 5 days."
+    },
+    "Tomato___Leaf_Mold": {
+        "recommendation": "Increase ventilation and avoid high humidity.",
+        "treatment": "Use Copper or Chlorothalonil weekly."
+    },
+    "Tomato___Septoria_leaf_spot": {
+        "recommendation": "Remove infected leaves and avoid splash watering.",
+        "treatment": "Apply Mancozeb or Chlorothalonil every 7 days."
+    },
+    "Tomato___Spider_mites Two-spotted_spider_mite": {
+        "recommendation": "Rinse leaves and reduce plant stress.",
+        "treatment": "Use Abamectin or Neem oil every 5 days."
+    },
+    "Tomato___Target_Spot": {
+        "recommendation": "Improve airflow and remove lower infected leaves.",
+        "treatment": "Spray Copper or Mancozeb weekly."
+    },
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+        "recommendation": "Control whiteflies and remove infected plants.",
+        "treatment": "No cure; use Imidacloprid for vector control."
+    },
+    "Tomato___Tomato_mosaic_virus": {
+        "recommendation": "Avoid handling plants when wet and sanitize tools.",
+        "treatment": "No cure; remove infected plants."
+    },
+    "Tomato___healthy": {
+        "recommendation": "Plant is healthy; keep nutrient levels balanced.",
+        "treatment": "None needed."
+    }
 }
 
 def load_crop_model(model_path):
