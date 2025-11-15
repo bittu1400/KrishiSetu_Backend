@@ -37,6 +37,13 @@ if os.getenv("ENVIRONMENT") != "PRODUCTION":
 
 
 ENV = os.getenv("ENV")
+DATABASE_URL=os.getenv("DATABASE_URLENV")
+GROQ_API_KEY=os.getenv("GROQ_API_KEY")
+OPENWEATHER_API_KEY=os.getenv("OPENWEATHER_API_KEY")
+TWILIO_ACCOUNT_SID=os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN=os.getenv("TWILIO_AUTH_TOKEN")
+SENDER_EMAIL=os.getenv("SENDER_EMAIL")
+SENDER_PASSWORD=os.getenv("SENDER_PASSWORD")
 
 logging.basicConfig(
     level=logging.DEBUG if ENV == "development" else logging.INFO,
@@ -71,6 +78,8 @@ def validate_environment():
 app = FastAPI(title="KrishiSetu RAG Backend", version="1.0")
 
 validate_environment()
+
+
 
 # CORS middleware
 app.add_middleware(
@@ -329,27 +338,28 @@ DISEASE_RECOMMENDATIONS = {
     }
 }
 
-def load_crop_model(model_path):
-    """Load pre-trained crop disease detection model."""
+if MODEL_AVAILABLE:
     try:
-        model = load_model(model_path)
-        print(f"✅ Model loaded successfully from {model_path}")
-        return model
+        MODEL = load_model(MODEL_PATH)
+        print("✅ Model loaded successfully")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        return None
-
-MODEL = load_crop_model(MODEL_PATH)
+        MODEL = None
+        print(f"❌ Failed to load model: {e}")
 
 def preprocess_image(image_bytes):
     """Convert raw image bytes to model-ready numpy array."""
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((128, 128))  # Adjust size based on model requirements
-    img_array = keras_image.img_to_array(img)
+    img = img.resize((128, 128))
+    img_array = np.array(img, dtype=np.float32)
     img_array = np.expand_dims(img_array, axis=0)
-    # Note: Normalization commented out; adjust based on model training
-    # img_array /= 255.0
-    print(f"📊 Preprocessed image shape: {img_array.shape}, dtype: {img_array.dtype}")
+    return img_array
+
+def preprocess_image(image_bytes):
+    """Convert raw image bytes to model-ready numpy array."""
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    img = img.resize((128, 128))
+    img_array = np.array(img, dtype=np.float32)
+    img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
 def predict_disease(preprocessed_image):
@@ -360,16 +370,21 @@ def predict_disease(preprocessed_image):
             class_index = np.argmax(preds[0])
             confidence = float(np.max(preds[0]) * 100)
         else:
-            # Mock prediction for testing
             class_index = random.randint(0, len(DISEASE_CLASSES) - 1)
             confidence = random.uniform(70, 99)
         
-        disease = DISEASE_CLASSES[class_index] if class_index < len(DISEASE_CLASSES) else "Unknown"
-        disease_name = disease.split("___")[-1].replace("_", " ")
+        # Get disease name
+        if class_index < len(DISEASE_CLASSES):
+            disease_full = DISEASE_CLASSES[class_index]
+            disease_name = disease_full.split("___")[-1].replace("_", " ")
+        else:
+            disease_full = "Unknown"
+            disease_name = "Unknown Disease"
         
         return {
             "class_index": int(class_index),
             "disease": disease_name,
+            "disease_full": disease_full,  # Optional: full name with crop
             "confidence": round(confidence, 2)
         }
     except Exception as e:
@@ -601,7 +616,6 @@ async def diagnose_crop(file: UploadFile = File(...)):
     print(f"📁 File name: {file.filename}")
     print(f"📝 Content type: {file.content_type}")
     
-    # ADD THIS: File size validation
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     
     try:
@@ -621,7 +635,6 @@ async def diagnose_crop(file: UploadFile = File(...)):
             print("❌ Empty file!")
             raise HTTPException(status_code=400, detail="Empty file uploaded")
         
-        # ADD THIS: Check file size
         if len(image_data) > MAX_FILE_SIZE:
             print(f"❌ File too large: {len(image_data)} bytes")
             raise HTTPException(
@@ -629,18 +642,30 @@ async def diagnose_crop(file: UploadFile = File(...)):
                 detail=f"File too large. Maximum size is 10MB, got {len(image_data) / 1024 / 1024:.2f}MB"
             )
         
-        # Rest of your code remains the same...
-        preprocessed_image = preprocess_image(image_data)
-        prediction = predict_disease(preprocessed_image)
+        # Preprocess the image
+        preprocessed_image = preprocess_image(image_data)  # make sure this function exists
+        print("✅ Image preprocessed successfully")
         
-        # ... existing response code ...
+        # Predict disease
+        prediction = predict_disease(preprocessed_image)  # make sure this function exists
+        print(f"✅ Prediction: {prediction}")
         
+        # Build response
+        response = {
+            "status": "success",
+            "file_name": file.filename,
+            "prediction": prediction  # e.g., {"disease": "Apple Cedar Rust", "confidence": 0.93}
+        }
+        
+        return JSONResponse(content=response, status_code=200)
+    
     except HTTPException as e:
         print(f"❌ HTTP Exception: {e.detail}")
         return JSONResponse(
             content={"error": e.detail, "status": "error"},
             status_code=e.status_code
         )
+    
     except Exception as e:
         print(f"❌ Unexpected error: {str(e)}")
         import traceback
@@ -1070,3 +1095,7 @@ def test_database(db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database test failed: {str(e)}")
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
