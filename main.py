@@ -653,8 +653,12 @@ async def diagnose_crop(file: UploadFile = File(...)):
         # Build response
         response = {
             "status": "success",
-            "file_name": file.filename,
-            "prediction": prediction  # e.g., {"disease": "Apple Cedar Rust", "confidence": 0.93}
+            # "file_name": file.filename,
+            # "prediction": prediction,  # e.g., {"disease": "Apple Cedar Rust", "confidence": 0.93}
+            "class_index": prediction["class_index"],
+            "disease": prediction["disease"],
+            "confidence": prediction["confidence"],
+            "recommendation": DISEASE_RECOMMENDATIONS.get(prediction["disease_full"], {}).get("recommendation", "No recommendation available."),
         }
         
         return JSONResponse(content=response, status_code=200)
