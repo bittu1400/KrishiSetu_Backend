@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
+import uvicorn
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import smtplib
@@ -50,7 +51,6 @@ logging.basicConfig(
     format="%(levelname)s:%(name)s:%(message)s",
 )
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-
 
 def validate_environment():
     """Validate all required environment variables are set."""
@@ -389,6 +389,11 @@ def predict_disease(preprocessed_image):
         }
     except Exception as e:
         raise ValueError(f"Error during prediction: {e}")
+
+# Example endpoint
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/send-otp")
 def send_otp(request: OTPRequest, db: Session = Depends(get_db)):
@@ -1103,3 +1108,7 @@ def test_database(db: Session = Depends(get_db)):
 @app.on_event("startup")
 def startup_event():
     init_db()
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
