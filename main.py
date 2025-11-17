@@ -32,7 +32,6 @@ except ImportError:
     MODEL_AVAILABLE = False
     print("Warning: TensorFlow not installed. Using mock detection.")
 
-
 if os.getenv("ENVIRONMENT") != "PRODUCTION":
     load_dotenv()
 
