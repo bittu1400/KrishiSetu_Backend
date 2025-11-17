@@ -16,18 +16,13 @@ cryptography>=43.0.0,<44.0
 # --- ML / AI Core ---
 tensorflow-cpu==2.20.0
 tf-keras==2.20.0
-numpy==1.26.4               # TensorFlow constraint
-protobuf>=4.24.4,<5.0.0
-ml-dtypes==0.3.2
+numpy>=1.26.4,<2.0
+protobuf>=5.28.0,<6.0  # Updated to match TensorFlow 2.20.0 requirement
+ml-dtypes>=0.3.2,<0.5.0
 scikit-learn>=1.5.2,<2.0
 pandas>=2.2.2,<3.0
 matplotlib>=3.9.2,<4.0
 seaborn>=0.13.2,<1.0
-
-# --- NOTE ---
-# ONLY ONE psycopg package is allowed. psycopg[binary] conflicts with psycopg2-binary.
-# If you prefer psycopg 3, remove psycopg2-binary and uncomment:
-# psycopg[binary]>=3.2.1,<4.0
 
 # --- NLP / Vector / LangChain ---
 langchain>=0.3.0,<0.4.0
@@ -37,20 +32,18 @@ langchain-huggingface>=0.1.0,<0.2.0
 langchain-chroma>=0.2.0,<0.3.0
 chromadb>=0.5.15,<0.6.0
 sentence-transformers>=3.4.1,<4.2
-faiss-cpu==1.12.0
+faiss-cpu>=1.9.0  # Minimum available version
 
 # --- PDF / File Handling ---
 pypdf>=4.3.1,<5.0
 pdfminer.six>=20221105,<20240000
 Pillow>=10.3.0,<11.0
-opencv-python-headless==4.10.0.84
-# (normal opencv-python pulls GTK/QT GUI libs -> breaks Alpine/slim images)
+opencv-python-headless>=4.10.0,<4.11.0
 
 # --- Audio / Visualization ---
-librosa==0.10.2.post1       # stable version for Docker
+librosa>=0.10.2,<0.11.0
 
 # --- Cloud / Utilities ---
 twilio>=9.1.0,<10.0
 groq>=0.9.0,<1.0
-
 argon2-cffi>=23.1.0,<24.0
