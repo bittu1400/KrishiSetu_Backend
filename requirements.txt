@@ -14,8 +14,8 @@ passlib[bcrypt]>=1.7.4,<2.0
 cryptography>=43.0.0,<44.0
 
 # --- ML / AI Core ---
-tensorflow==2.16.2
-tf-keras==2.16.0
+tensorflow-cpu==2.20.0
+tf-keras==2.20.0
 numpy==1.26.4               # TensorFlow constraint
 protobuf>=4.24.4,<5.0.0
 ml-dtypes==0.3.2
