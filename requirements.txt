@@ -36,8 +36,8 @@ langchain-ollama>=0.2.0,<0.3.0
 langchain-huggingface>=0.1.0,<0.2.0
 langchain-chroma>=0.2.0,<0.3.0
 chromadb>=0.5.15,<0.6.0
-sentence-transformers>=3.1.1,<4.0
-faiss-cpu==1.8.0            # Must pin for Docker stability
+sentence-transformers>=3.4.1,<4.2
+faiss-cpu==1.12.0
 
 # --- PDF / File Handling ---
 pypdf>=4.3.1,<5.0
