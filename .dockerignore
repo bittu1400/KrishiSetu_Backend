@@ -1,0 +1,23 @@
+cat > .dockerignore << 'EOF'
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.dylib
+.git
+.gitignore
+.env
+.venv
+venv/
+ENV/
+env/
+*.egg-info/
+.DS_Store
+.pytest_cache
+.coverage
+htmlcov/
+*.log
+node_modules/
+EOF
