@@ -1,21 +1,78 @@
-__pycache__
+# Python cache
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.so
-*.dylib
-.git
-.gitignore
+*.egg-info/
+
+# Environment
 .env
 .venv
 venv/
 ENV/
 env/
-*.egg-info/
-.DS_Store
-.pytest_cache
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# ===== TRAINING FILES (NOT NEEDED) =====
+Detector/Train_Plant_Disease.py
+training_hist.json
+Trained_model.keras
+
+# Training datasets
+Detector/
+train/
+valid/
+test/
+datasets/
+raw_data/
+
+# Notebooks
+*.ipynb
+.ipynb_checkpoints/
+notebooks/
+
+# Visualization outputs
+*.png
+*.jpg
+*.jpeg
+plots/
+figures/
+
+# Test files
+test_*.py
+*_test.py
+
+# ===== DEVELOPMENT FILES =====
+RAG/get_class_names.py
+RAG/create_metadata.py
+
+# Documentation
+README.md
+LICENSE
+docs/
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# PDFs (FAISS already built)
+RAG/data/*.pdf
+*.pdf
+
+# Pytest
+.pytest_cache/
 .coverage
 htmlcov/
-*.log
-node_modules/
