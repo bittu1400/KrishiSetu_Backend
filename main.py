@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request, File, UploadFile
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -23,6 +23,8 @@ from DataBase import curd
 from DataBase.models import User, Expert, Booking  # Import models last
 from RAG.chatbot import get_chatbot_response
 import json
+from sqlalchemy import desc
+
 # TensorFlow and Keras imports
 try:
     from tf_keras.models import load_model
@@ -1029,7 +1031,6 @@ def get_bookings_count(user_email: str, db: Session = Depends(get_db)):
         print(f"❌ Error fetching booking count: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch booking count: {str(e)}")
 
-from sqlalchemy import desc
 
 @app.get("/expert/{expert_id}/bookings")
 def get_expert_bookings(

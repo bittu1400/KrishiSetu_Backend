@@ -1,6 +1,11 @@
 from sqlalchemy.orm import Session
 from DataBase.models import User, Expert
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from .models import Booking, User, Expert
+from datetime import datetime
+import uuid
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
@@ -71,11 +76,6 @@ def update_expert_status(db: Session, expert_id: int, status: str):
 # Add these functions to DataBase/curd.py
 # ============================================
 
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from .models import Booking, User, Expert
-from datetime import datetime
-import uuid
 
 def create_booking(
     db: Session,
