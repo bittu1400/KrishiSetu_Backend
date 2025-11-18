@@ -26,14 +26,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /root/.local /root/.local
 
-# Copy only necessary files (model excluded via .dockerignore)
+# Copy application files
 COPY main.py .
 COPY DataBase/ DataBase/
 COPY RAG/ RAG/
 COPY class_names.json .
+COPY trained_model.h5 .
 
 ENV PATH=/root/.local/bin:$PATH
 
 EXPOSE $PORT
 
-CMD uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+# Use shell form to allow variable expansion
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
