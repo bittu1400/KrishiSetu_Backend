@@ -7,8 +7,8 @@ requests==2.32.3
 python-dotenv==1.0.1
 pytz==2024.2
 
-# Database / Auth
-SQLAlchemy==2.0.36
+# Database / Auth - FIXED: Allow compatible SQLAlchemy version
+SQLAlchemy>=2.0.0,<2.0.36
 psycopg2-binary==2.9.10
 passlib[bcrypt]==1.7.4
 cryptography==43.0.3
