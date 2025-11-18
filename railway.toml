@@ -1,4 +1,3 @@
-cat > railway.toml << 'EOF'
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
