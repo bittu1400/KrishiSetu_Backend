@@ -14,8 +14,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
-    PORT=8080
+    PYTHONPATH=/app
 
 WORKDIR /app
 
@@ -25,17 +24,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean
 
 COPY --from=builder /root/.local /root/.local
-
-# Copy application files
-COPY main.py .
-COPY DataBase/ DataBase/
-COPY RAG/ RAG/
-COPY class_names.json .
-COPY trained_model.h5 .
+COPY . .
 
 ENV PATH=/root/.local/bin:$PATH
 
-EXPOSE $PORT
+# Create a startup script
+RUN printf '#!/bin/sh\nexec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8080}"\n' > /start.sh && \
+    chmod +x /start.sh
 
-# Use shell form to allow variable expansion
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
+CMD ["/bin/sh", "/start.sh"]
