@@ -1,49 +1,47 @@
-# --- Core API Stack ---
-fastapi>=0.115.0,<1.0
-uvicorn[standard]>=0.30.6,<1.0
-pydantic[email]>=2.9.0,<3.0
-python-multipart>=0.0.9,<0.2.0
-requests>=2.32.3,<3.0
-python-dotenv>=1.0.1,<2.0
-pytz>=2024.1,<2026.0
+# Core API Stack
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic[email]==2.9.0
+python-multipart==0.0.12
+requests==2.32.3
+python-dotenv==1.0.1
+pytz==2024.2
 
-# --- Database / Auth ---
-SQLAlchemy>=2.0.36,<3.0
+# Database / Auth
+SQLAlchemy==2.0.36
 psycopg2-binary==2.9.10
-passlib[bcrypt]>=1.7.4,<2.0
-cryptography>=43.0.0,<44.0
+passlib[bcrypt]==1.7.4
+cryptography==43.0.3
 
-# --- ML / AI Core ---
+# ML / AI Core - Use CPU versions only
 tensorflow-cpu==2.20.0
 tf-keras==2.20.0
-numpy>=1.26.4,<2.0
-protobuf>=5.28.0,<6.0  # Updated to match TensorFlow 2.20.0 requirement
-ml-dtypes>=0.5.1,<1.0
-scikit-learn>=1.5.2,<2.0
-pandas>=2.2.2,<3.0
-matplotlib>=3.9.2,<4.0
-seaborn>=0.13.2,<1.0
+numpy==1.26.4
+protobuf==5.28.3
+ml-dtypes==0.5.1
+scikit-learn==1.5.2
+pandas==2.2.3
 
-# --- NLP / Vector / LangChain ---
-langchain>=0.3.0,<0.4.0
-langchain-community>=0.3.0,<0.4.0
-langchain-ollama>=0.2.0,<0.3.0
-langchain-huggingface>=0.1.0,<0.2.0
-langchain-chroma>=0.2.0,<0.3.0
-chromadb>=0.5.15,<0.6.0
-sentence-transformers>=3.4.1,<4.2
-faiss-cpu>=1.9.0  # Minimum available version
+# NLP / Vector / LangChain
+langchain==0.3.7
+langchain-community==0.3.7
+langchain-ollama==0.2.0
+langchain-huggingface==0.1.2
+langchain-chroma==0.2.0
+chromadb==0.5.20
+sentence-transformers==3.4.1
+faiss-cpu==1.9.0.post1
 
-# --- PDF / File Handling ---
-pypdf>=4.3.1,<5.0
-pdfminer.six>=20221105,<20240000
-Pillow>=10.3.0,<11.0
-opencv-python-headless>=4.10.0,<4.11.0
+# PDF / File Handling
+pypdf==4.3.1
+pdfminer.six==20231228
+Pillow==10.4.0
+opencv-python-headless==4.10.0.84
 
-# --- Audio / Visualization ---
-librosa>=0.10.2,<0.11.0
+# Audio
+librosa==0.10.2.post1
 
-# --- Cloud / Utilities ---
-twilio>=9.1.0,<10.0
-groq>=0.9.0,<1.0
-argon2-cffi>=23.1.0,<24.0
+# Cloud / Utilities
+twilio==9.3.7
+groq==0.11.0
+argon2-cffi==23.1.0
