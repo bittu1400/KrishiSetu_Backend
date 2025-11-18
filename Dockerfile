@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /root/.local /root/.local
 
-# Copy ONLY production files
+# Copy application code
 COPY main.py .
 COPY class_names.json .
 COPY trained_model.h5 .
