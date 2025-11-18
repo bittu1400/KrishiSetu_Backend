@@ -8,12 +8,7 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-```
 
-### **3. Create `.dockerignore`**
-
-Reduce build size by excluding unnecessary files:
-```
 __pycache__
 *.pyc
 *.pyo

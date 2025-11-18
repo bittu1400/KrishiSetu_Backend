@@ -389,10 +389,13 @@ def predict_disease(preprocessed_image):
     except Exception as e:
         raise ValueError(f"Error during prediction: {e}")
 
-# Example endpoint
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+async def health_check():
+    """Quick health check - don't do heavy DB operations here"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat()
+    }
 
 @app.post("/send-otp")
 def send_otp(request: OTPRequest, db: Session = Depends(get_db)):
